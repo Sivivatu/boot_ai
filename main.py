@@ -15,7 +15,6 @@ def main() -> None:
     verbose: bool = "--verbose" in sys.argv
     args: list[str] = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
 
-    user_prompt: str = sys.argv[1] if len(sys.argv) > 1 else None
     if not args:
         # exit if no prompt is provided
         print("AI Code Assistant")
@@ -24,6 +23,8 @@ def main() -> None:
         sys.exit(1)
     
     api_key: str | None = os.getenv("GEMINI_API_KEY")
+
+    user_prompt: str = " ".join(args)
 
     messages: list[types.Content] = [
         types.Content(role="user",
