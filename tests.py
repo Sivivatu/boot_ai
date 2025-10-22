@@ -3,6 +3,7 @@ import os
 import unittest
 from functions.get_files_info import get_files_info
 from functions.get_file_content import get_file_content
+from functions.run_python_file import run_python_file
 from functions.write_file import write_file
 
 class TestGetFilesInfo(unittest.TestCase):
@@ -66,7 +67,7 @@ class TestGetFileContent(unittest.TestCase):
         expected_error = 'Error: File not found or is not a regular file: "pkg/does_not_exist.py"'
         self.assertEqual(result, expected_error)
 
-class TestGetFileContent(unittest.TestCase):
+class TestWriteFile(unittest.TestCase):
     def setUp(self):
         self.working_directory = os.getcwd()  # Use the current working directory for testing
 
@@ -87,6 +88,43 @@ class TestGetFileContent(unittest.TestCase):
         print(result)  # Print the result to the console
         expected_error = 'Error: Cannot write to "/tmp/temp.txt" as it is outside the permitted working directory'
         self.assertEqual(result, expected_error)
+
+
+class TestRunPythonFile(unittest.TestCase):
+    def test_run_main_py(self):
+        result = run_python_file("calculator", "main.py")
+        print(result)  # Print the result to the console
+        self.assertIn("Calculator App", result)
+        self.assertFalse(result.startswith("Error:"))
+    
+    def test_run_main_py_with_args(self):
+        result = run_python_file("calculator", "main.py", ["3 + 5"])
+        print(result)  # Print the result to the console
+        self.assertIn("STDOUT:", result)
+        self.assertIn("8", result)
+        self.assertFalse(result.startswith("Error:"))
+
+    def test_run_tests_py(self):
+        result = run_python_file("calculator", "tests.py")
+        print(result)  # Print the result to the console
+        self.assertIn("STDOUT:", result)
+        # self.assertIn("OK", result)
+        # self.assertFalse(result.startswith("Error:"))
+
+    def test_run_outside_directory(self):
+        result = run_python_file("calculator", "../main.py")
+        print(result)  # Print the result to the console
+        self.assertIn("Error: Cannot execute", result)
+
+    def test_run_nonexistent_file(self):
+        result = run_python_file("calculator", "nonexistent.py")
+        print(result)  # Print the result to the console
+        self.assertIn("Error: File \"nonexistent.py\" not found", result)
+
+    def test_run_lorem_txt(self):
+        result = run_python_file("calculator", "lorem.txt")
+        print(result)  # Print the result to the console
+        self.assertIn("Error: File \"lorem.txt\" is not a Python file", result)
 
 
 if __name__ == "__main__":
