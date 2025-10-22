@@ -3,6 +3,7 @@ import os
 import unittest
 from functions.get_files_info import get_files_info
 from functions.get_file_content import get_file_content
+from functions.write_file import write_file
 
 class TestGetFilesInfo(unittest.TestCase):
     def setUp(self):
@@ -63,6 +64,28 @@ class TestGetFileContent(unittest.TestCase):
         result = get_file_content("calculator", "pkg/does_not_exist.py")
         print(result)  # Print the result to the console
         expected_error = 'Error: File not found or is not a regular file: "pkg/does_not_exist.py"'
+        self.assertEqual(result, expected_error)
+
+class TestGetFileContent(unittest.TestCase):
+    def setUp(self):
+        self.working_directory = os.getcwd()  # Use the current working directory for testing
+
+    def test_write_lorem_txt(self):
+        result = write_file("calculator", "lorem.txt", "wait, this isn't lorem ipsum")
+        print(result)  # Print the result to the console
+        self.assertIn('28 characters written', result)
+        # self.assertIn('Successfully wrote to "lorem.txt"', result)
+
+    def test_write_morelorem_txt(self):
+        result = write_file("calculator", "pkg/morelorem.txt", "lorem ipsum dolor sit amet")
+        print(result)  # Print the result to the console
+        self.assertIn('26 characters written', result)
+        # self.assertIn('Successfully wrote to "pkg/morelorem.txt"', result)
+
+    def test_write_outside_directory(self):
+        result = write_file("calculator", "/tmp/temp.txt", "this should not be allowed")
+        print(result)  # Print the result to the console
+        expected_error = 'Error: Cannot write to "/tmp/temp.txt" as it is outside the permitted working directory'
         self.assertEqual(result, expected_error)
 
 
