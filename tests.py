@@ -1,7 +1,8 @@
-# create tests for the functions/get_files_info.py script
-import unittest
+# create tests for the functions directory
 import os
-from functions.get_files_info import get_files_info 
+import unittest
+from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
 
 class TestGetFilesInfo(unittest.TestCase):
     def setUp(self):
@@ -34,15 +35,36 @@ class TestGetFilesInfo(unittest.TestCase):
         self.assertEqual(result, expected_error)
 
 
-    # def test_get_files_info_invalid_directory(self):
-    #     invalid_directory = "/invalid/directory/path"
-    #     result = get_files_info(self.working_directory, invalid_directory)
-    #     self.assertEqual(result, f'Error: Cannot list "{invalid_directory}" as it is outside the permitted working directory')
+class TestGetFileContent(unittest.TestCase):
+    def test_get_file_content_main_py(self):
+        # Test reading calculator/main.py
+        result = get_file_content("calculator", "main.py")
+        print(result)  # Print the result to the console
+        self.assertIn("import sys", result)
+        self.assertIn("Calculator", result)
+        self.assertFalse(result.startswith("Error:"))
+    
+    def test_get_file_content_pkg_calculator_py(self):
+        # Test reading calculator/pkg/calculator.py
+        result = get_file_content("calculator", "pkg/calculator.py")
+        print(result)  # Print the result to the console
+        self.assertIn("class Calculator", result)
+        self.assertFalse(result.startswith("Error:"))
+    
+    def test_get_file_content_outside_directory(self):
+        # Test reading /bin/cat which is outside the working directory
+        result = get_file_content("calculator", "/bin/cat")
+        print(result)  # Print the result to the console
+        expected_error = 'Error: Cannot read "/bin/cat" as it is outside the permitted working directory'
+        self.assertEqual(result, expected_error)
+    
+    def test_get_file_content_non_existent(self):
+        # Test reading a non-existent file
+        result = get_file_content("calculator", "pkg/does_not_exist.py")
+        print(result)  # Print the result to the console
+        expected_error = 'Error: File not found or is not a regular file: "pkg/does_not_exist.py"'
+        self.assertEqual(result, expected_error)
 
-    # def test_get_files_info_non_existent_directory(self):
-    #     non_existent_directory = os.path.join(self.working_directory, "non_existent")
-    #     result = get_files_info(self.working_directory, non_existent_directory)
-    #     self.assertEqual(result, f'Error: "{non_existent_directory}" is not a directory')
 
 if __name__ == "__main__":
     unittest.main()
