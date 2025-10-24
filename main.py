@@ -2,10 +2,11 @@ import os
 from dotenv import load_dotenv
 import sys
 
-from google import genai
+from google import genai 
 from google.genai import types
 
-
+from .call_function import available_functions
+from .prompts import system_prompt
 
 # prompt: str = "Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum."
 
@@ -24,6 +25,10 @@ def main() -> None:
     
     api_key: str | None = os.getenv("GEMINI_API_KEY")
 
+    model_name = 'gemini-2.0-flash-001'
+
+
+
     user_prompt: str = " ".join(args)
 
     messages: list[types.Content] = [
@@ -36,13 +41,29 @@ def main() -> None:
     )
 
     response: genai.models.GenerateContentResponse = client.models.generate_content(
-    model='gemini-2.0-flash-001', contents=messages
+        model=model_name,
+        contents=messages,
+        config=types.GenerateContentConfig(
+            tools= [available_functions],
+            system_instruction=system_prompt),
     )
 
 
     if verbose:
         print(f'User prompt: {user_prompt}\n')
-    print(response.text)    
+    function_called: bool= False
+
+    if response.candidates and response.candidates[0].content.parts:
+        for part in response.candidates[0].content.parts:
+            if function_called := part.function_call is not None:
+                args_str = ", ".join(f"'{k}': '{v}'" for k, v in part.function_call.args.items())
+                print(f"Function call planned: {part.function_call.name}({args_str})")
+
+                function_called = True
+                break
+    
+    if not function_called:
+        print(response.text)    
     if verbose:
         print(f'Prompt tokens: {response.usage_metadata.prompt_token_count }')
         print(f'Response tokens: {response.usage_metadata.candidates_token_count }')
