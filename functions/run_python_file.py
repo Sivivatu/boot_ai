@@ -1,48 +1,61 @@
 import os
-from subprocess import CompletedProcess
+import subprocess
 
 from google.genai import types
 
 schema_run_python_file = types.FunctionDeclaration(
     name="run_python_file",
-    description="Executes a specified Python file within the working directory and returns its output.",
+    description="Executes a Python file within the working directory and returns the output from the interpreter.",
     parameters=types.Schema(
         type=types.Type.OBJECT,
         properties={
             "file_path": types.Schema(
                 type=types.Type.STRING,
-                description="The path to the Python file to execute, relative to the working directory.",
+                description="Path to the Python file to execute, relative to the working directory.",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(
+                    type=types.Type.STRING,
+                    description="Optional arguments to pass to the Python file.",
+                ),
+                description="Optional arguments to pass to the Python file.",
             ),
         },
         required=["file_path"],
     ),
 )
 
-
 def run_python_file(working_directory, file_path: str, args=[]):
     """Run a Python file located at file_path within the specified working_directory."""
+    abs_working_dir = os.path.abspath(working_directory)
     abs_file_path = os.path.abspath(os.path.join(working_directory, file_path))
-    abs_working_directory = os.path.abspath(working_directory)
-
-    # os.path.commonpath([abs_working_directory, abs_file_path])
-    if not abs_file_path.startswith(abs_working_directory + os.sep) and abs_file_path != abs_working_directory:
+    if not abs_file_path.startswith(abs_working_dir):
         return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
     if not os.path.exists(abs_file_path):
-        return f'Error: File "{file_path}" not found'
-    if not os.path.splitext(file_path)[1] == ".py":
-        return f'Error: File "{file_path}" is not a Python file.'
+        return f'Error: File "{file_path}" not found.'
+    if not file_path.endswith(".py"):
+        return f'Error: "{file_path}" is not a Python file.'
     try:
-        import subprocess
-        result: CompletedProcess[str] = subprocess.run(
-            ["python3", abs_file_path] + args,
-            cwd=abs_working_directory,
+        commands = ["python", abs_file_path]
+        if args:
+            commands.extend(args)
+        result = subprocess.run(
+            commands,
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
+            cwd=abs_working_dir,
         )
-        if result.returncode != 0:            
-            return f'STDERR: {result.stderr.strip()}'
+        output = []
+        if result.stdout:
+            output.append(f"STDOUT:\n{result.stdout}")
+        if result.stderr:
+            output.append(f"STDERR:\n{result.stderr}")
 
-        return f'STDOUT: {result.stdout.strip()}'
+        if result.returncode != 0:
+            output.append(f"Process exited with code {result.returncode}")
+
+        return "\n".join(output) if output else "No output produced."
     except Exception as e:
-        return f'Error: executing python file: {e}'
+        return f"Error: executing Python file: {e}"
