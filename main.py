@@ -5,10 +5,9 @@ import sys
 from google import genai 
 from google.genai import types
 
-from .call_function import available_functions
-from .prompts import system_prompt
+from call_function import available_functions, call_function
+from prompts import system_prompt
 
-# prompt: str = "Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum."
 
 def main() -> None:
     load_dotenv()
@@ -57,8 +56,13 @@ def main() -> None:
         for part in response.candidates[0].content.parts:
             if function_called := part.function_call is not None:
                 args_str = ", ".join(f"'{k}': '{v}'" for k, v in part.function_call.args.items())
-                print(f"Function call planned: {part.function_call.name}({args_str})")
-
+                print(f"Calling function: {part.function_call.name}({args_str})")
+                try:
+                    function_call_result = call_function(part.function_call, verbose=verbose)
+                    print(f"-> {function_call_result.parts[0].function_response.response}")
+                except Exception:
+                    if verbose:
+                        print(f"-> {function_call_result.parts[0].function_response.response}")
                 function_called = True
                 break
     
