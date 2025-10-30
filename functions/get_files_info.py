@@ -45,10 +45,20 @@ def get_files_info(working_directory, directory=None) -> str:
 
     files_info = []
     for root, dirs, files in os.walk(abs_directory):
+        # Calculate the relative path from abs_directory to current root
+        rel_root = os.path.relpath(root, abs_directory)
+        if rel_root == ".":
+            rel_root = ""
+        
         # Add directories
         for dirname in dirs:
+            # Include relative path in the name
+            if rel_root:
+                dir_rel_path = os.path.join(rel_root, dirname)
+            else:
+                dir_rel_path = dirname
             file_info = {
-                "name": dirname,
+                "name": dir_rel_path,
                 "size": 0,  # Directories don't have a meaningful size
                 "is_directory": True,
             }
@@ -57,8 +67,13 @@ def get_files_info(working_directory, directory=None) -> str:
         # Add files
         for filename in files:
             file_path = os.path.join(root, filename)
+            # Include relative path in the name
+            if rel_root:
+                file_rel_path = os.path.join(rel_root, filename)
+            else:
+                file_rel_path = filename
             file_info = {
-                "name": filename,
+                "name": file_rel_path,
                 "size": os.path.getsize(file_path),
                 "is_directory": False,
             }
